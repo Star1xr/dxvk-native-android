@@ -183,6 +183,10 @@ namespace dxvk {
       return D3D_OK;
 
     // Let's actually ask Vulkan now that we got some quirks out the way!
+    // Emulated BC formats are backed by an RGBA8 image.
+    if (mapping.IsEmulatedBC())
+      return CheckDeviceVkFormat(mapping.ConversionFormatInfo.FormatColor, Usage, RType);
+
     return CheckDeviceVkFormat(mapping.FormatColor, Usage, RType);
   }
 

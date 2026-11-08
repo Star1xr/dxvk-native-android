@@ -214,11 +214,17 @@ namespace dxvk {
     m_shaderFrag1D(createShaderModule(dxvk_blit_frag_1d)),
     m_shaderFrag2D(createShaderModule(dxvk_blit_frag_2d)),
     m_shaderFrag3D(createShaderModule(dxvk_blit_frag_3d)) {
+    m_depthClamp = device->features().core.features.depthClamp;
+
     if (device->extensions().extShaderViewportIndexLayer) {
       m_shaderVert = createShaderModule(dxvk_fullscreen_layer_vert);
     } else {
       m_shaderVert = createShaderModule(dxvk_fullscreen_vert);
-      m_shaderGeom = createShaderModule(dxvk_fullscreen_geom);
+      // Geometry shaders are optional on mobile; without them (and
+      // without VK_EXT_shader_viewport_index_layer) layered meta
+      // operations are unavailable, which D3D9 does not need.
+      if (device->features().core.features.geometryShader)
+        m_shaderGeom = createShaderModule(dxvk_fullscreen_geom);
     }
   }
 
@@ -522,7 +528,7 @@ namespace dxvk {
     rsState.sType               = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rsState.pNext               = nullptr;
     rsState.flags               = 0;
-    rsState.depthClampEnable    = VK_TRUE;
+    rsState.depthClampEnable    = m_depthClamp ? VK_TRUE : VK_FALSE;
     rsState.rasterizerDiscardEnable = VK_FALSE;
     rsState.polygonMode         = VK_POLYGON_MODE_FILL;
     rsState.cullMode            = VK_CULL_MODE_NONE;

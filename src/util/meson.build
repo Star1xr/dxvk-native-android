@@ -35,7 +35,7 @@ util_src_linux = [
 
 if dxvk_platform == 'windows'
   util_src += util_src_win32
-elif dxvk_platform == 'linux'
+elif dxvk_platform == 'linux' or dxvk_platform == 'android'
   util_src += util_src_linux
 else
   error('Unknown platform for util')

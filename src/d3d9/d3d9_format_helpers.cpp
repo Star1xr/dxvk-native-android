@@ -6,6 +6,9 @@
 #include <d3d9_convert_a2w10v10u10.h>
 #include <d3d9_convert_nv12.h>
 #include <d3d9_convert_yv12.h>
+#include <d3d9_convert_dxt1.h>
+#include <d3d9_convert_dxt3.h>
+#include <d3d9_convert_dxt5.h>
 
 namespace dxvk {
 
@@ -57,6 +60,17 @@ namespace dxvk {
         ConvertGenericFormat(conversionFormat, dstImage, dstSubresource, srcSlice, VK_FORMAT_R32_UINT, 0, { 1u, 1u });
         break;
 
+      case D3D9ConversionFormat_DXT1:
+        // 8 bytes per 4x4 block
+        ConvertGenericFormat(conversionFormat, dstImage, dstSubresource, srcSlice, VK_FORMAT_R32G32_UINT, 0, { 4u, 4u });
+        break;
+
+      case D3D9ConversionFormat_DXT3:
+      case D3D9ConversionFormat_DXT5:
+        // 16 bytes per 4x4 block
+        ConvertGenericFormat(conversionFormat, dstImage, dstSubresource, srcSlice, VK_FORMAT_R32G32B32A32_UINT, 0, { 4u, 4u });
+        break;
+
       default:
         Logger::warn("Unimplemented format conversion");
     }
@@ -83,8 +97,9 @@ namespace dxvk {
     auto tmpImageView = m_device->createImageView(dstImage, imageViewInfo);
 
     VkExtent3D imageExtent = dstImage->mipLevelExtent(dstSubresource.mipLevel);
-    imageExtent = VkExtent3D{ imageExtent.width  / macroPixelRun.width,
-                              imageExtent.height / macroPixelRun.height,
+    // Round up so that partial blocks (mips smaller than the block) are covered
+    imageExtent = VkExtent3D{ (imageExtent.width  + macroPixelRun.width  - 1) / macroPixelRun.width,
+                              (imageExtent.height + macroPixelRun.height - 1) / macroPixelRun.height,
                               1 };
 
     DxvkBufferViewCreateInfo bufferViewInfo;
@@ -121,6 +136,9 @@ namespace dxvk {
     m_shaders[D3D9ConversionFormat_A2W10V10U10] = InitShader(d3d9_convert_a2w10v10u10);
     m_shaders[D3D9ConversionFormat_NV12] = InitShader(d3d9_convert_nv12);
     m_shaders[D3D9ConversionFormat_YV12] = InitShader(d3d9_convert_yv12);
+    m_shaders[D3D9ConversionFormat_DXT1] = InitShader(d3d9_convert_dxt1);
+    m_shaders[D3D9ConversionFormat_DXT3] = InitShader(d3d9_convert_dxt3);
+    m_shaders[D3D9ConversionFormat_DXT5] = InitShader(d3d9_convert_dxt5);
   }
 
 

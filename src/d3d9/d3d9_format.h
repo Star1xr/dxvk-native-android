@@ -136,6 +136,11 @@ namespace dxvk {
     D3D9ConversionFormat_A2W10V10U10,
     D3D9ConversionFormat_NV12,
     D3D9ConversionFormat_YV12,
+    // Software fallbacks for devices without textureCompressionBC.
+    // DXT2 uses the DXT3 path and DXT4 the DXT5 path.
+    D3D9ConversionFormat_DXT1,
+    D3D9ConversionFormat_DXT3,
+    D3D9ConversionFormat_DXT5,
     D3D9ConversionFormat_Count
   };
 
@@ -166,6 +171,12 @@ namespace dxvk {
     D3D9_CONVERSION_FORMAT_INFO ConversionFormatInfo = { };
 
     bool IsValid() const { return FormatColor != VK_FORMAT_UNDEFINED; }
+
+    /// True if this format is a BC format decoded to RGBA8 on the GPU
+    bool IsEmulatedBC() const {
+      return ConversionFormatInfo.FormatType >= D3D9ConversionFormat_DXT1
+          && ConversionFormatInfo.FormatType <= D3D9ConversionFormat_DXT5;
+    }
   };
 
   D3D9_VK_FORMAT_MAPPING ConvertFormatUnfixed(D3D9Format Format);
@@ -212,6 +223,7 @@ namespace dxvk {
       VkFormatFeatureFlags  Features) const;
 
     bool m_a4r4g4b4Support;
+    bool m_bcSupport;
     bool m_d24s8Support;
     bool m_d16s8Support;
 

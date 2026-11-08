@@ -23,7 +23,8 @@ namespace dxvk {
       case D3DQUERYTYPE_OCCLUSION:
         m_query[0] = dxvkDevice->createGpuQuery(
           VK_QUERY_TYPE_OCCLUSION,
-          VK_QUERY_CONTROL_PRECISE_BIT, 0);
+          dxvkDevice->features().core.features.occlusionQueryPrecise
+            ? VK_QUERY_CONTROL_PRECISE_BIT : VkQueryControlFlags(0), 0);
         break;
 
       case D3DQUERYTYPE_TIMESTAMP:

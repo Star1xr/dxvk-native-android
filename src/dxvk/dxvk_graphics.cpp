@@ -311,9 +311,12 @@ namespace dxvk {
     rsInfo.sType                  = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rsInfo.pNext                  = nullptr;
     rsInfo.flags                  = 0;
-    rsInfo.depthClampEnable       = VK_TRUE;
+    const DxvkDeviceFeatures& devFeatures = m_pipeMgr->m_device->features();
+    const bool hasDepthClamp      = devFeatures.core.features.depthClamp;
+    rsInfo.depthClampEnable       = hasDepthClamp ? VK_TRUE : VK_FALSE;
     rsInfo.rasterizerDiscardEnable = rasterizedStream < 0;
-    rsInfo.polygonMode            = state.rs.polygonMode();
+    rsInfo.polygonMode            = devFeatures.core.features.fillModeNonSolid
+      ? state.rs.polygonMode() : VK_POLYGON_MODE_FILL;
     rsInfo.cullMode               = state.rs.cullMode();
     rsInfo.frontFace              = state.rs.frontFace();
     rsInfo.depthBiasEnable        = state.rs.depthBiasEnable();
@@ -331,7 +334,7 @@ namespace dxvk {
     if (m_pipeMgr->m_device->features().extDepthClipEnable.depthClipEnable)
       rsDepthClipInfo.pNext = std::exchange(rsInfo.pNext, &rsDepthClipInfo);
     else
-      rsInfo.depthClampEnable = !state.rs.depthClipEnable();
+      rsInfo.depthClampEnable = hasDepthClamp && !state.rs.depthClipEnable();
 
     uint32_t sampleMask = state.ms.sampleMask();
 

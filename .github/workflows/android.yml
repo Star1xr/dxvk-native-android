@@ -1,0 +1,52 @@
+name: Android build
+
+on:
+  push:
+    branches: [ android-port ]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  SDL_TAG: release-2.30.9
+  API: 24
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [ arm64-v8a, armeabi-v7a ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install host tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build glslang-tools cmake
+          pip install --user meson
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Build SDL2 for ${{ matrix.abi }}
+        run: |
+          SDL_DIR="$RUNNER_TEMP/sdl"; mkdir -p "$SDL_DIR"
+          git clone --depth 1 --branch "$SDL_TAG" https://github.com/libsdl-org/SDL.git "$SDL_DIR/src"
+          cmake -S "$SDL_DIR/src" -B "$SDL_DIR/build" -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=android-$API \
+            -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TEST=OFF
+          cmake --build "$SDL_DIR/build"
+          find "$SDL_DIR/build" -name libSDL2.so
+
+      - name: Build libdxvk_d3d9.so
+        run: |
+          SDL_DIR="$RUNNER_TEMP/sdl"
+          export SDL2_INCLUDE="$SDL_DIR/src/include"
+          export SDL2_LIB_DIR="$(dirname "$(find "$SDL_DIR/build" -name libSDL2.so | head -1)")"
+          ./android/build-android.sh ${{ matrix.abi }} $API
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libdxvk_d3d9-${{ matrix.abi }}
+          path: build-android/${{ matrix.abi }}/lib/libdxvk_d3d9.so
+          if-no-files-found: error

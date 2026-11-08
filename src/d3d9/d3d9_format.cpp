@@ -451,6 +451,18 @@ namespace dxvk {
     m_a4r4g4b4Support = CheckImageFormatSupport(adapter, VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
       VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
 
+    // Mobile GPUs frequently lack BC1-3. DXT1/3/5 are then decoded
+    // to RGBA8 by a compute shader when the texture data is uploaded.
+    m_bcSupport = CheckImageFormatSupport(adapter, VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
+      VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
+               && CheckImageFormatSupport(adapter, VK_FORMAT_BC2_UNORM_BLOCK,
+      VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT)
+               && CheckImageFormatSupport(adapter, VK_FORMAT_BC3_UNORM_BLOCK,
+      VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+
+    if (!m_bcSupport)
+      Logger::warn("D3D9: BC1-3 not supported, decoding DXT1/3/5 to RGBA8 on the GPU");
+
     if (!m_d24s8Support)
       Logger::info("D3D9: VK_FORMAT_D24_UNORM_S8_UINT -> VK_FORMAT_D32_SFLOAT_S8_UINT");
 
@@ -480,6 +492,29 @@ namespace dxvk {
 
     if (Format == D3D9Format::D32 && !m_d32supportFinal)
       return D3D9_VK_FORMAT_MAPPING();
+
+    if (!m_bcSupport) {
+      // FormatColor stays the BC format so that staging buffer sizes and
+      // pitches keep the D3D9 block layout; the image itself is RGBA8.
+      switch (Format) {
+        case D3D9Format::DXT1:
+          mapping.ConversionFormatInfo = { D3D9ConversionFormat_DXT1, 1u,
+            VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB };
+          break;
+        case D3D9Format::DXT2:
+        case D3D9Format::DXT3:
+          mapping.ConversionFormatInfo = { D3D9ConversionFormat_DXT3, 1u,
+            VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB };
+          break;
+        case D3D9Format::DXT4:
+        case D3D9Format::DXT5:
+          mapping.ConversionFormatInfo = { D3D9ConversionFormat_DXT5, 1u,
+            VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SRGB };
+          break;
+        default:
+          break;
+      }
+    }
     
     if (!m_d24s8Support && mapping.FormatColor == VK_FORMAT_D24_UNORM_S8_UINT)
       mapping.FormatColor = VK_FORMAT_D32_SFLOAT_S8_UINT;

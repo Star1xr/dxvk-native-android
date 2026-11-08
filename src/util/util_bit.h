@@ -1,5 +1,10 @@
 #pragma once
 
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
+#define DXVK_ARCH_X86 1
+#endif
+
+#ifdef DXVK_ARCH_X86
 #ifndef _MSC_VER
 #if defined(__WINE__) && defined(__clang__)
 #pragma push_macro("_WIN32")
@@ -12,10 +17,12 @@
 #else
 #include <intrin.h>
 #endif
+#endif
 
 #include "util_likely.h"
 #include "util_math.h"
 
+#include <cstdint>
 #include <cstring>
 #include <iterator>
 #include <type_traits>
@@ -55,7 +62,7 @@ namespace dxvk::bit {
     return _tzcnt_u32(n);
     #elif defined(__BMI__)
     return __tzcnt_u32(n);
-    #elif defined(__GNUC__) || defined(__clang__)
+    #elif (defined(__GNUC__) || defined(__clang__)) && defined(DXVK_ARCH_X86)
     uint32_t res;
     uint32_t tmp;
     asm (
@@ -65,6 +72,8 @@ namespace dxvk::bit {
       : "=&r" (res), "=&r" (tmp)
       : "r" (n));
     return res;
+    #elif defined(__GNUC__) || defined(__clang__)
+    return n != 0 ? __builtin_ctz(n) : 32;
     #else
     uint32_t r = 31;
     n &= -n;
@@ -144,7 +153,7 @@ namespace dxvk::bit {
   template<typename T>
   bool bcmpeq(const T* a, const T* b) {
     static_assert(alignof(T) >= 16);
-    #if defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER)
+    #if defined(DXVK_ARCH_X86) && (defined(__GNUC__) || defined(__clang__) || defined(_MSC_VER))
     auto ai = reinterpret_cast<const __m128i*>(a);
     auto bi = reinterpret_cast<const __m128i*>(b);
 
