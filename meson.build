@@ -140,10 +140,39 @@ else
     wrc = find_program('rc')
   else
     dxvk_include_path = include_directories('./include', './include/native/', './include/native/windows', './include/native/directx')
-    lib_vulkan  = dxvk_compiler.find_library('vulkan')
-    lib_sdl2    = dxvk_compiler.find_library('SDL2')
     wrc = find_program('echo')
     so_prefix = 'libdxvk_'
+
+    if dxvk_platform == 'android'
+      # Android (bionic): Vulkan comes from the NDK's libvulkan.so stub (API 24+),
+      # SDL2 is usually a prebuilt libSDL2.so that is not in the NDK sysroot.
+      sdl2_lib_dir = get_option('dxvk_android_sdl2_lib_dir')
+      sdl2_inc_dir = get_option('dxvk_android_sdl2_include_dir')
+
+      if sdl2_inc_dir != ''
+        dxvk_include_path = [ dxvk_include_path, include_directories(sdl2_inc_dir, is_system : true) ]
+      endif
+
+      if sdl2_lib_dir != ''
+        lib_sdl2 = dxvk_compiler.find_library('SDL2', dirs : [ sdl2_lib_dir ])
+      else
+        lib_sdl2 = dxvk_compiler.find_library('SDL2')
+      endif
+
+      lib_vulkan = dxvk_compiler.find_library('vulkan')
+
+      # <SDL2/SDL.h> -> <SDL.h> forwarding headers, only used if the real
+      # SDL2/ directory is not found (flat SDL include layouts, e.g. Source SDK forks).
+      add_project_arguments('-idirafter', meson.source_root() + '/include/native/android', language : 'cpp')
+
+      # Only Direct3DCreate9* & co. (DLLEXPORT) must be visible. Keeps the statically
+      # linked libc++ from leaking into the host process.
+      add_project_arguments('-fvisibility=hidden', '-fvisibility-inlines-hidden', language : [ 'c', 'cpp' ])
+      add_project_link_arguments('-llog', '-Wl,--exclude-libs,ALL', language : [ 'c', 'cpp' ])
+    else
+      lib_vulkan  = dxvk_compiler.find_library('vulkan')
+      lib_sdl2    = dxvk_compiler.find_library('SDL2')
+    endif
   endif
 
   res_ext = ''

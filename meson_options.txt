@@ -7,3 +7,5 @@ option('build_id',     type : 'boolean', value : false)
 
 option('dxvk_native_force', type : 'boolean', value : false,  description: 'Force building using DXVK native. Eg. for Windows')
 option('dxvk_native_wsi',   type : 'string',  value : 'sdl2', description: 'WSI system to use if building natively.')
+option('dxvk_android_sdl2_lib_dir',     type : 'string',  value : '',     description: 'Android only: directory containing libSDL2.so for the target ABI.')
+option('dxvk_android_sdl2_include_dir', type : 'string',  value : '',     description: 'Android only: directory containing SDL.h (flat) or SDL2/SDL.h.')

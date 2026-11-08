@@ -2,6 +2,10 @@
 
 #include "../util_env.h"
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#endif
+
 namespace dxvk {
   
   Logger::Logger(const std::string& file_name)
@@ -67,6 +71,14 @@ namespace dxvk {
 
       while (std::getline(stream, line, '\n')) {
         std::cerr << prefix << line << std::endl;
+
+#ifdef __ANDROID__
+        // stderr is discarded for app processes, mirror to logcat (tag: DXVK).
+        static const std::array<int, 5> s_androidPrio = {{
+          ANDROID_LOG_VERBOSE, ANDROID_LOG_DEBUG, ANDROID_LOG_INFO,
+          ANDROID_LOG_WARN,    ANDROID_LOG_ERROR }};
+        __android_log_write(s_androidPrio.at(static_cast<uint32_t>(level)), "DXVK", line.c_str());
+#endif
 
         if (m_fileStream)
           m_fileStream << prefix << line << std::endl;
