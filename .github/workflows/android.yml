@@ -29,18 +29,20 @@ jobs:
 
       - name: Build SDL2 for ${{ matrix.abi }}
         run: |
-          git clone --depth 1 --branch "$SDL_TAG" https://github.com/libsdl-org/SDL.git sdl-src
-          cmake -S sdl-src -B sdl-build -G Ninja \
+          SDL_DIR="$RUNNER_TEMP/sdl"; mkdir -p "$SDL_DIR"
+          git clone --depth 1 --branch "$SDL_TAG" https://github.com/libsdl-org/SDL.git "$SDL_DIR/src"
+          cmake -S "$SDL_DIR/src" -B "$SDL_DIR/build" -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
             -DANDROID_ABI=${{ matrix.abi }} -DANDROID_PLATFORM=android-$API \
             -DCMAKE_BUILD_TYPE=Release -DSDL_SHARED=ON -DSDL_STATIC=OFF -DSDL_TEST=OFF
-          cmake --build sdl-build
-          find sdl-build -name 'libSDL2.so'
+          cmake --build "$SDL_DIR/build"
+          find "$SDL_DIR/build" -name libSDL2.so
 
       - name: Build libdxvk_d3d9.so
         run: |
-          export SDL2_INCLUDE="$PWD/sdl-src/include"
-          export SDL2_LIB_DIR="$(dirname "$(find "$PWD/sdl-build" -name libSDL2.so | head -1)")"
+          SDL_DIR="$RUNNER_TEMP/sdl"
+          export SDL2_INCLUDE="$SDL_DIR/src/include"
+          export SDL2_LIB_DIR="$(dirname "$(find "$SDL_DIR/build" -name libSDL2.so | head -1)")"
           ./android/build-android.sh ${{ matrix.abi }} $API
 
       - uses: actions/upload-artifact@v4

@@ -150,7 +150,8 @@ else
       sdl2_inc_dir = get_option('dxvk_android_sdl2_include_dir')
 
       if sdl2_inc_dir != ''
-        dxvk_include_path = [ dxvk_include_path, include_directories(sdl2_inc_dir, is_system : true) ]
+        # absolute path (may live inside the source tree): include_directories() refuses that
+        add_project_arguments('-isystem', sdl2_inc_dir, language : 'cpp')
       endif
 
       if sdl2_lib_dir != ''
