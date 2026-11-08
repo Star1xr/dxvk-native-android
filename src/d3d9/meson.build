@@ -6,7 +6,10 @@ d3d9_shaders = files([
   'shaders/d3d9_convert_x8l8v8u8.comp',
   'shaders/d3d9_convert_a2w10v10u10.comp',
   'shaders/d3d9_convert_nv12.comp',
-  'shaders/d3d9_convert_yv12.comp'
+  'shaders/d3d9_convert_yv12.comp',
+  'shaders/d3d9_convert_dxt1.comp',
+  'shaders/d3d9_convert_dxt3.comp',
+  'shaders/d3d9_convert_dxt5.comp'
 ])
 
 d3d9_src = [

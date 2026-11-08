@@ -54,6 +54,10 @@ namespace dxvk {
     /// Workaround for games using alpha test == 1.0, etc due to wonky interpolation or
     /// misc. imprecision on some vendors
     bool alphaTestWiggleRoom;
+
+    /// Whether the device supports shaderClipDistance. Mobile GPUs may not,
+    /// in which case user clip planes are silently ignored.
+    bool useClipDistance = true;
   };
 
 }

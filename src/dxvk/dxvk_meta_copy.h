@@ -166,6 +166,7 @@ namespace dxvk {
 
     VkShaderModule m_shaderVert = VK_NULL_HANDLE;
     VkShaderModule m_shaderGeom = VK_NULL_HANDLE;
+    bool           m_depthClamp   = true;
 
     FragShaders m_color;
     FragShaders m_depth;

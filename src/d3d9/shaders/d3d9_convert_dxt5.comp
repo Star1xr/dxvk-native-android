@@ -1,0 +1,39 @@
+#version 450
+#extension GL_GOOGLE_include_directive : enable
+
+#include "d3d9_convert_dxt_common.h"
+
+layout(
+  local_size_x = 8,
+  local_size_y = 8,
+  local_size_z = 1) in;
+
+layout(binding = 0, rgba8) writeonly uniform image2D dst;
+
+// R32G32B32A32_UINT: 16 bytes per 4x4 block
+layout(binding = 1) uniform usamplerBuffer src;
+
+layout(push_constant)
+uniform u_info_t {
+  uvec2 extent; // size of the block grid
+} u_info;
+
+void main() {
+  uvec2 block = gl_GlobalInvocationID.xy;
+
+  if (all(lessThan(block, u_info.extent))) {
+    uvec4 data = texelFetch(src, int(block.x + block.y * u_info.extent.x));
+    ivec2 size = imageSize(dst);
+
+    for (uint t = 0u; t < 16u; t++) {
+      ivec2 pos = ivec2(block) * 4 + ivec2(int(t & 3u), int(t >> 2u));
+
+      if (all(lessThan(pos, size))) {
+        float alpha = dxt5_decode_alpha(data.xy, t);
+
+        vec4 color = dxt_decode_color(data.z, data.w, t, false);
+        imageStore(dst, pos, vec4(color.rgb, alpha));
+      }
+    }
+  }
+}
