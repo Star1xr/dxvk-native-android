@@ -13,6 +13,15 @@ namespace dxvk {
 
 
   DxvkNameSet DxvkPlatformExts::getInstanceExtensions() {
+#ifdef __ANDROID__
+    // SDL on Android only supports a single window, which the game already owns (or will
+    // create), so a hidden dummy window cannot be used to ask SDL for the extensions.
+    // These two are what SDL_Vulkan_GetInstanceExtensions returns on Android.
+    DxvkNameSet androidNames;
+    androidNames.add("VK_KHR_surface");
+    androidNames.add("VK_KHR_android_surface");
+    return androidNames;
+#else
     SDL_Window* window = SDL_CreateWindow(
       "Dummy Window",
       SDL_WINDOWPOS_UNDEFINED,
@@ -38,6 +47,7 @@ namespace dxvk {
     SDL_DestroyWindow(window);
 
     return names;
+#endif
   }
 
 
